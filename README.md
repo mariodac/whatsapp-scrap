@@ -13,20 +13,20 @@ No linux:
 <a id="ancora1"></a>
 - Para criação do ambiente:
 ```
-python3 -m venv venv
+python3 -m venv env
 ```
 - Para ativar o ambiente:
 ```
-. venv/bin/activate
+. env/bin/activate
 ```
 No windows:
 - Para criação do ambiente:
 ```
-py -3 -m venv venv
+py -3 -m venv env
 ```
 - Para ativar o ambiente:
 ```
-venv\Scripts\activate
+env\Scripts\activate
 ```
 Todos as bibliotecas e suas versões estão no arquivo [requisitos](requirements.txt)
 
@@ -39,12 +39,12 @@ Para instalar as bibliotecas siga os passos:
 
 No Linux:
 ```
-venv/bin/pip install -r requirements.txt
+env/bin/pip install -r requirements.txt
 ```
 Ou execute o [Script Shell](requirements.sh)
 
 No windows:
 ```
-venv\Scripts\pip install -r requirements.txt
+env\Scripts\pip install -r requirements.txt
 ```
 
