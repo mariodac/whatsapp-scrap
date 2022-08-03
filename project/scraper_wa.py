@@ -1,4 +1,8 @@
-import re, time, os, socket, logging
+#Desenvolvido por Mario Cabral em 23/07/2022
+#Atualização: 03/08/2022.
+#Abre whatsapp web e salva print das conversas pesquisadas pelo usuario
+
+import re, time, os, socket, logging, datetime
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -10,6 +14,8 @@ from selenium.webdriver.support import expected_conditions as EC
 # configuração inicial webbdriver
 service = ChromeService(executable_path=ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service)
+
+
 
 # configuração logger
 # hostname da máquina que executa o script
@@ -82,7 +88,13 @@ def locate_chat_ignore_case(name:str):
         search_chat.click()
         time.sleep(1)
         search_chat.send_keys(name)
-        print()
+        time.sleep(1)
+        # enviando enter seleciona o primeira conversa dos resultados
+        # search_chat.send_keys(Keys.ENTER)
+        chat_list = driver.find_element(By.ID, 'pane-side')
+        chats = chat_list.find_elements(By.XPATH, '//div[@aria-colindex="2"]')
+        # primeiro resultado da lista
+        print(chats[-2].text)
     except Exception as err:
         logger.error(err)
 
@@ -183,6 +195,14 @@ def save_print(path_out, name):
         path_out (string): caminho da pasta onde será salvo a imagem
         name (string): nome do arquivo
     """
+    now = datetime.datetime.now()
+    now = now.strftime("%d-%m-%Y")
+    path_today = os.path.join(path_out, now)
+    if not os.path.isdir(path_today):
+        os.mkdir(path_today)
+    path_chat = os.path.join(path_today, name)
+    if not os.path.isdir(path_chat):
+        os.mkdir(path_chat)
     time.sleep(5)
     i = 1
     scroll_roll = 500
@@ -191,7 +211,7 @@ def save_print(path_out, name):
     while True:
         # pega conversa
         element = driver.find_element(By.ID, 'main')
-        print_chat = os.path.join(path_out, '{}_{}.png'.format(name, i))
+        print_chat = os.path.join(path_chat, '{}_{}.png'.format(name, i))
         # salva print da conversa
         element.screenshot(print_chat)
         logger.info("Print salvo em {}".format(print_chat))
@@ -269,3 +289,9 @@ def locate_chat2(name):
             element.click()
             if re.search('^(([0]?[1-9]|1[0-2])(:)([0-5][0-9]))$', element.text):
                 find_elements.append(element)
+
+
+if __name__ == '__main__':
+    path_out = r'D:\Imagens\TESTE-WA'
+    # locate_chat_today(path_out)
+    locate_all_chat_by_name(path_out)
