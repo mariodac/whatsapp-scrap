@@ -5,16 +5,12 @@
 import re, time, os, socket, logging, datetime
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.utils import ChromeType 
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
-
-# configuração inicial webbdriver
-service = ChromeService(executable_path=ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service)
-
 
 
 # configuração logger
@@ -25,14 +21,19 @@ log_format = '%(hostname)s - %(asctime)s - %(name)s - %(levelname)s - %(message)
 logger = logging.getLogger('scraper_wa')
 # configura nivel de log
 logger.setLevel('DEBUG')
+# configuração inicial webbdriver
 try:
 	# verifica sistema operacional
     if os.name == 'nt':
+        service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.GOOGLE).install())
         path_log = os.environ['TEMP']
     else:
+        service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install())
         path_log = '/var/log/'
 except Exception as err:
 	logger.error(err)
+driver = webdriver.Chrome(service=service)
+
 path_hostname = os.path.join(path_log, "scraper_wa-{}".format(hostname))
 # nome do arquivo de log
 file_handler = logging.FileHandler("{}.log".format(path_hostname))
@@ -292,6 +293,6 @@ def locate_chat2(name):
 
 
 if __name__ == '__main__':
-    path_out = r'D:\Imagens\TESTE-WA'
+    path_out = r'\\192.168.1.4\publica\Relatorio'
     # locate_chat_today(path_out)
     locate_all_chat_by_name(path_out)
