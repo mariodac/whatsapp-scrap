@@ -18,6 +18,7 @@ from selenium.webdriver.support import expected_conditions as EC
 hostname = socket.gethostname()
 # formato do log
 log_format = '%(hostname)s - %(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# log_format = '{} - %(asctime)s - %(name)s - %(levelname)s - %(message)s'.format(hostname)
 logger = logging.getLogger('scraper_wa')
 # configura nivel de log
 logger.setLevel('DEBUG')
@@ -113,6 +114,8 @@ def locate_chat_today(path_out):
             driver.execute_script("document.evaluate('//div[@id=\"pane-side\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scroll(0, 0);")
             # Define o tamanho de rolagem
             scroll_roll = 1000
+            now = datetime.datetime.now()
+            now = now.strftime("%d-%m-%Y")
             while True:
                 # todos os chats visiveis na página
                 elements = driver.find_elements(By.XPATH, '//div[@role="gridcell"]')
@@ -127,10 +130,12 @@ def locate_chat_today(path_out):
                             scroll_to_top()
                             save_print(path_out, name)
                             chats.append(name)
+                            logger.info("Chat {} do dia {} encontrado".format(name, now))
                         else:
                             continue
                 # verifica se chegou no fim da lista de chat
                 if scroll_roll >= scroll_height:
+                    logger.info("{} chats encontrados do dia {}".format(len(chats), now))
                     break
                 # Rola no tamanho definido
                 driver.execute_script("document.evaluate('//div[@id=\"pane-side\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scroll(0, {});".format(scroll_roll))
@@ -138,6 +143,8 @@ def locate_chat_today(path_out):
                 scroll_roll += 1000
                 # Espera página carregar
                 time.sleep(SCROLL_PAUSE_TIME)
+            if not chats:
+                logger.info("Nenhum chat encontrado do dia {}".format(now))
     except Exception as err:
         logger.error(err)
 
@@ -293,6 +300,6 @@ def locate_chat2(name):
 
 
 if __name__ == '__main__':
-    path_out = r'\\192.168.1.4\publica\Relatorio'
-    # locate_chat_today(path_out)
-    locate_all_chat_by_name(path_out)
+    path_out = r'D:\Imagens\TESTE-WA'
+    locate_chat_today(path_out)
+    # locate_all_chat_by_name(path_out)
