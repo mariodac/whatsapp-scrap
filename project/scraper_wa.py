@@ -30,7 +30,7 @@ try:
         path_log = os.environ['TEMP']
     else:
         service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install())
-        path_log = os.path.join(['home'], '.scraper_wa')
+        path_log = os.path.join(os.enviro['HOME'], '.scraper_wa')
         if not os.path.isdir(path_log):
             os.mkdir(path_log)
 except Exception as err:
