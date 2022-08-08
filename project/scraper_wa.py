@@ -16,32 +16,36 @@ from selenium.webdriver.support import expected_conditions as EC
 # configuração logger
 # hostname da máquina que executa o script
 hostname = socket.gethostname()
-# formato do log
-log_format = '%(hostname)s - %(asctime)s - %(name)s - %(levelname)s - %(message)s'
-# log_format = '{} - %(asctime)s - %(name)s - %(levelname)s - %(message)s'.format(hostname)
+
 logger = logging.getLogger('scraper_wa')
 # configura nivel de log
 logger.setLevel('DEBUG')
-# configuração inicial webbdriver
 try:
 	# verifica sistema operacional
     if os.name == 'nt':
+        # configuração inicial webbdriver no chrome
         service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.GOOGLE).install())
+        # caminho do log
         path_log = os.environ['TEMP']
+        # formato do log
+        log_format = '%(hostname)s - %(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        # aplica formato 
+        formatter = logging.Formatter(log_format, defaults={"hostname": hostname})
     else:
+        # configuração inicial webbdriver no chromium
         service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install())
-        path_log = os.path.join(os.enviro['HOME'], '.scraper_wa')
-        if not os.path.isdir(path_log):
-            os.mkdir(path_log)
+        # caminho do log
+        path_log = os.path.join(os.environ['HOME'], '.scraper_wa')
+        # formato do log
+        log_format = '{} - %(asctime)s - %(name)s - %(levelname)s - %(message)s'.format(hostname)
+        formatter = logging.Formatter(log_format)
 except Exception as err:
 	logger.error(err)
+# configuração inicial webbdriver
 driver = webdriver.Chrome(service=service)
-
-path_hostname = os.path.join(path_log, "scraper_wa-{}".format(hostname))
 # nome do arquivo de log
+path_hostname = os.path.join(path_log, "scraper_wa-{}".format(hostname))
 file_handler = logging.FileHandler("{}.log".format(path_hostname))
-# aplica formato 
-formatter = logging.Formatter(log_format, defaults={"hostname": hostname})
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
