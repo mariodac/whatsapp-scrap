@@ -7,7 +7,8 @@ from scraper_wa import *
 # diretorio para salvar imagens
 path_out = r"D:\Imagens\TESTE-WA"
 
-# locate_all_chat_by_name(path_out)
-locate_chat_today(path_out)
 # read_input = input('Nome -> ')
 # locate_chat_ignore_case(read_input)
+# locate_all_chat_by_name(path_out)
+# locate_chat_today(path_out)
+locate_all_chat(path_out)
