@@ -1,9 +1,21 @@
 # whatsapp-scrap
 Scrapping whatsapp web
+Realiza a abertura de whatsapp web e realiza prints de conversas
+## Modo de usar:
+
+Há 3 modos que é realizado o print:
+<a id="ancora2"></a>
+- Pesquisa por nome: **FUNÇÃO** (*locate_chat_ignore_case*, *locate_all_chat_by_name*)
+- Chats do dia: **FUNÇÃO** (*locate_chat_today*)
+- Todos os chats: **FUNÇÃO** (*locate_all_chat_by_name*)
+
+Dentro do arquivo [test.py](project/test.py), chame a [**FUNÇÃO**](#ancora2) desejada e execute o arquivo.
 
 **Compatível com Windows, Linux**
 
-## Requisitos
+Foi criado o arquivo *Batch* [start.bat](start.bat) para realizar a verificação e execução do projeto em sistemas Windows
+
+### Requisitos
 Python 3.10 ou superior
 
 É recomendado a criação de ambiente virtual para execução do projeto:
@@ -47,4 +59,5 @@ No windows:
 ```
 env\Scripts\pip install -r requirements.txt
 ```
+
 
