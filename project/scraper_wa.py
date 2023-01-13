@@ -1,8 +1,8 @@
 #Desenvolvido por Mario Cabral em 23/07/2022
-#Atualização: 03/08/2022.
-#Abre whatsapp web e salva print das conversas pesquisadas pelo usuario
+#Atualização: 26/12/2022.
+#Abre whatsapp web e salva print das conversas
 
-import re, time, os, socket, logging, datetime
+import re, time, os, socket, logging, datetime, requests
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.core.utils import ChromeType 
@@ -11,8 +11,18 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver import ActionChains
 
-
+def check_internet():
+    timeout = 10
+    try:
+        requests.get('https://www.google.com', timeout=timeout)
+        return True
+    except ConnectionError:
+        return False
+# dicionario para criar a pasta do diretorio do mês
+MESES = {"01":"JANEIRO", "02":"FEVEREIRO", "03":"MARÇO", "04":"ABRIL", "05":"MAIO", "06":"JUNHO","07":"JULHO","08":"AGOSTO","09":"SETEMBRO","10":"OUTUBRO","11":"NOVEMBRO","12":"DEZEMBRO"}
 # configuração logger
 # hostname da máquina que executa o script
 hostname = socket.gethostname()
@@ -20,56 +30,82 @@ hostname = socket.gethostname()
 logger = logging.getLogger('scraper_wa')
 # configura nivel de log
 logger.setLevel('DEBUG')
-try:
-	# verifica sistema operacional
-    if os.name == 'nt':
-        print('Windows')
-        # configuração inicial webbdriver no chromium
-        service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.GOOGLE).install())
-        path_log = os.environ['TEMP']
-        log_format = '%(hostname)s - %(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        # aplica formato 
-        formatter = logging.Formatter(log_format, defaults={"hostname": hostname})
-    else:
-        print('Linux')
-        # configuração inicial webbdriver no chromium
-        service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install())
-        # caminho do log
-        path_log = os.path.join(os.environ['HOME'], '.scraper_wa')
-        # formato do log
-        log_format = '{} - %(asctime)s - %(name)s - %(levelname)s - %(message)s'.format(hostname)
-        formatter = logging.Formatter(log_format)
-except Exception as err:
-	logger.error(err)
+if check_internet():
+    try:
+        # verifica sistema operacional
+        if os.name == 'nt':
+            print('Windows')
+            # configuração inicial webbdriver no chromium
+            service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.GOOGLE).install())
+            # diretorio temp do windows
+            path_log = os.environ['TEMP']
+            log_format = '%(hostname)s - %(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            # aplica formato 
+            formatter = logging.Formatter(log_format, defaults={"hostname": hostname})
+        else:
+            print('Linux')
+            # configuração inicial webbdriver no chromium
+            service = ChromeService(executable_path=ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install())
+            # caminho do log
+            path_log = os.path.join(os.environ['HOME'], '.scraper_wa')
+            # formato do log
+            log_format = '{} - %(asctime)s - %(name)s - %(levelname)s - %(message)s'.format(hostname)
+            formatter = logging.Formatter(log_format)
+    except Exception as err:
+        logger.error(err)
+else:
+    logger.error("Erro de conexão")
+    raise ConnectionError("Internet fora do ar")
 # configuração inicial webbdriver
-driver = webdriver.Chrome(service=service)
+chrome_options = Options()
+# inicia o chrome com a janela maximizada
+chrome_options.add_argument("--start-maximized")
+try:
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+except:
+    chrome_options.binary_location = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+    driver = webdriver.Chrome(service=service, options=chrome_options)
 
 path_hostname = os.path.join(path_log, "scraper_wa-{}".format(hostname))
 # nome do arquivo de log
 file_handler = logging.FileHandler("{}.log".format(path_hostname))
+# configura formato do log
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-#login to WhatsApp web
-try:
-    driver.get("https://web.whatsapp.com/")
-except Exception as err:
-    logger.error("Erro no driver "+err)
+if check_internet():
+    #login to WhatsApp web
+    try:
+        driver.get("https://web.whatsapp.com/")
+    except Exception as err:
+        logger.error("Erro no driver "+err)
+else:
+    logger.error("Erro de conexão")
+    raise ConnectionError("Internet fora do ar")
 
 # wait para scanear QR code do celular
 wait = WebDriverWait(driver, 600)
 
 # espera para carregar interface do whatsapp
-time.sleep(2)
+time.sleep(30)
 chat_header = wait.until(EC.visibility_of_element_located((By.XPATH, "//header[@data-testid='chatlist-header']")))
 
+
 def normalizeName(name):
+    """Remove caracteres especiais do nome informado
+
+    Args:
+        name (_type_): palavra a ser removida caracteres
+
+    Returns:
+        str: palavra sem caracteres especiais
+    """
     try:
         name = name.replace(':', '-')
         name = name.replace('’', '\'')
         name = re.sub(r'[\\\/\:\*\?\"\<\>\|]+', '', name)
         name = re.sub(r'[.]{2,}', '', name)
-        name = ' '.join(re.findall('[\w\sà-ú\(\)\[\]\{\}\-\+\=!@#$%ªº´`¨&_§¬¢£~^\°;,.]*', name)) #pylint: disable=anomalous-backslash-in-string
+        name = ' '.join(re.findall('[\w\sà-ú\(\)\[\]\{\}\-\+\=!@#$%ªº´`¨&_§¬¢£~^\°;,.]*', name))
         name = name.strip()
         return name
     except Exception as err:
@@ -90,12 +126,14 @@ def locate_chat(name:str):
             # wait para carregar o chat 
             wait = WebDriverWait(driver, 10)
             try: 
+                # tag que possui o nome da conversa
                 x_arg = '//span[contains(@title, \'{}\')]'.format(name)
                 # print(x_arg)
+                # busca a tag com o nome da pessoa
                 person_title = wait.until(EC.presence_of_element_located((By.XPATH, x_arg)))
                 # print(person_title)
                 person_title.click()
-                # para carregar o chat 
+                # espera para carregar o chat 
                 time.sleep(5)
                 name = person_title.text
                 name = normalizeName(name)
@@ -110,27 +148,30 @@ def locate_chat(name:str):
         logger.error(err)
 
 def locate_chat_ignore_case(name:str, path_out):
-    """Localiza 
+    """Localiza conversa ignorando maiscula e minuscula
 
     Args:
-        name (str): nome da conversa a ser persquisada
-        path_out (str): caminho para salvar prints
+        name (str): Nome da conversa
+        path_out (str): caminho de saida dos prints
     """
     try:
         wait = WebDriverWait(driver, 10)
+        # busca botão de pesquisa
         search_chat = wait.until(EC.presence_of_element_located((By.XPATH, '//div[@data-testid="chat-list-search"]')))
+        # clica no botão de pesquisa
         search_chat.click()
-        time.sleep(2)
+        time.sleep(1)
+        # envia o nome informado para o campo de pesquisa
         search_chat.send_keys(name)
-        time.sleep(5)
+        time.sleep(1)
         # enviando enter seleciona o primeira conversa dos resultados
         search_chat.send_keys(Keys.ENTER)
-        chat_name = driver.find_element(By.XPATH, '//div[@data-testid="conversation-info-header"]')
-        if "\n" in chat_name.text :
-            chat_name = chat_name.text.split('\n')[0]
-        chat_name = normalizeName(chat_name)
-        save_print(path_out, chat_name)
-        # metodo alternativo
+        # obtem o nome da conversa
+        name = wait.until(EC.presence_of_element_located((By.XPATH, '//div[@data-testid="conversation-info-header"]')))
+        name = name.text.split("\n")[0]
+        # sobe no topo 
+        scroll_to_top()
+        save_print(path_out, name)
         # pegar o nome e salvar screenshot
         # chat_list = driver.find_element(By.ID, 'pane-side')
         # chats = chat_list.find_elements(By.XPATH, '//div[@aria-colindex="2"]')
@@ -141,10 +182,10 @@ def locate_chat_ignore_case(name:str, path_out):
         logger.error(err)
 
 def locate_chat_today(path_out):
-    """Localizar todos os chats do dia e tirar print de toda conversa
+    """Localiza todos os chats do dia atual e realiza prints
 
     Args:
-        path_out (str): caminho onde será salvo prints
+        path_out (str): caminho de saida para os prints
     """
     try:
         if chat_header:
@@ -165,17 +206,32 @@ def locate_chat_today(path_out):
                 for element in elements:
                     # verifica hora da ultima mensagem apenas do dia atual
                     if re.search('(2[0-3]|[01]?[0-9]):([0-5]?[0-9])', element.text):
+                        # clica na conversa
+                        element.click()
+                        # abre menu de contexto da conversa
+                        ActionChains(driver).context_click(element).perform()
+                        time.sleep(5)
                         try:
-                            element.click()
+                            element_context = driver.find_element(By.XPATH, '//div[@role="application"]')
                         except:
-                            continue
+                            element_context = None
+                        # marca conversa como não lida
+                        if element_context:
+                            # verifica se whatsapp é business
+                            if 'Editar etiqueta' in element_context.text:
+                                ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
+                            else:
+                                ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
                         # obtem nome da conversa
                         name = element.text.split("\n")[0]
                         name = normalizeName(name)
                         # verifica nome na lista de chats encontrados
                         if name not in chats:
+                            # sobe no topo da conversa
                             scroll_to_top()
+                            # salva os prints das conversas
                             save_print(path_out, name)
+                            # adiciona nome na lista
                             chats.append(name)
                         else:
                             continue
@@ -193,10 +249,11 @@ def locate_chat_today(path_out):
         logger.error(err)
 
 def locate_all_chat(path_out):
-    """Entrar em todos os chats e tira prints
+    """Localiza todos os chats e realiza prints
 
     Args:
-        path_out (str): caminho onde será salvo os arquivos
+        path_out (str): caminho de saida para os prints
+
     """
     try:
         if chat_header:
@@ -215,21 +272,34 @@ def locate_all_chat(path_out):
                 # todos os chats visiveis na página
                 elements = driver.find_elements(By.XPATH, '//div[@role="gridcell"]')
                 for element in elements:
-                        try:
-                            element.click()
-                        except:
-                            continue
-                        time.sleep(5)
-                        # obtem nome da conversa
-                        name = element.text.split("\n")[0]
-                        name = normalizeName(name)
-                        # verifica nome na lista de chats encontrados
-                        if name not in chats:
-                            scroll_to_top()
-                            # save_print(path_out, name)
-                            chats.append(name)
+                    # clica na conversa
+                    element.click()
+                    # abre menu de contexto da conversa
+                    ActionChains(driver).context_click(element).perform()
+                    time.sleep(5)
+                    try:
+                        element_context = driver.find_element(By.XPATH, '//div[@role="application"]')
+                    except:
+                        element_context = None
+                    # marca conversa como não lida
+                    if element_context:
+                        if 'Editar etiqueta' in element_context.text:
+                            ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
                         else:
-                            continue
+                            ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
+                    # obtem nome da conversa
+                    name = element.text.split("\n")[0]
+                    name = normalizeName(name)
+                    # verifica nome na lista de chats encontrados
+                    if name not in chats:
+                        # sobe até o topo do chat
+                        scroll_to_top()
+                        # salva os prints
+                        save_print(path_out, name)
+                        # adiciona nome na lista
+                        chats.append(name)
+                    else:
+                        continue
                 # verifica se chegou no fim da lista de chat
                 if scroll_roll >= scroll_height:
                     break
@@ -285,7 +355,9 @@ def locate_all_chat_by_name(path_out):
                 elif scroll_roll >= scroll_height:
                     break
             if check:
+                # sobe ate o topo 
                 scroll_to_top()
+                # salva prints
                 save_print(path_out, name_chat)
             else:
                 logger.warning("Conversa com {} não encontrada".format(read_input))
@@ -293,7 +365,7 @@ def locate_all_chat_by_name(path_out):
         driver.quit()
         logger.error(err)
         
-def save_print(path_out, name):
+def save_print(path_out, name:str):
     """Salva print de conversa
 
     Args:
@@ -301,34 +373,66 @@ def save_print(path_out, name):
         name (string): nome do arquivo
     """
     try:
+        # retira caracteres especiais do nome
         name = normalizeName(name)
+        # obtem data atual
         now = datetime.datetime.now()
+        init_backup = now.strftime("%m/%d/%Y, %H:%M:%S")
         now = now.strftime("%d-%m-%Y")
-        path_today = os.path.join(path_out, now)
+        # monta o caminho da pasta do mês - exemplo: administrativo-geral/ADMINISTRATIVO-GERAL/02 DPTO TI.GTI/10 - CONTROLE FERRAMENTAS/WHATSAPP/NOVEMBRO
+        path_month = os.path.join(path_out, MESES[now.split('-')[1]])
+        # verifica se pasta do mes não existe e cria a pasta
+        if not os.path.isdir(path_month):
+            os.mkdir(path_month)
+        # monta o caminho da pasta do mês - exemplo: administrativo-geral/ADMINISTRATIVO-GERAL/02 DPTO TI.GTI/10 - CONTROLE FERRAMENTAS/WHATSAPP/NOVEMBRO/01-11-2022
+        path_today = os.path.join(path_month, now)
+        # verifica se pasta do dia não existe e cria a pasta
         if not os.path.isdir(path_today):
             os.mkdir(path_today)
+        # monta o caminho da pasta da conversa - exemplo: administrativo-geral/ADMINISTRATIVO-GERAL/02 DPTO TI.GTI/10 - CONTROLE FERRAMENTAS/WHATSAPP/NOVEMBRO/01-11-2022/nome_da_conversa
         path_chat = os.path.join(path_today, name)
+        # verifica se pasta da conversa não existe e cria a pasta
         if not os.path.isdir(path_chat):
             os.mkdir(path_chat)
+        # abre arquivo com o nome do terminal
+        file_host = open('{}/{}.txt'.format(path_chat, hostname), 'a', encoding='utf-8')
+        # registra hora que iniciou backup no arquivo
+        file_host.write('BACKUP INICIADO {}\n'.format(init_backup))
         time.sleep(5)
         i = 1
         scroll_roll = 500
         # Pega tamanho total do scroll
         scroll_height = driver.execute_script("return document.evaluate('//div[@data-testid=\"conversation-panel-messages\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scrollHeight")
+        try:
+            element_name = driver.find_element(By.XPATH, '//span[@data-testid="conversation-info-header-chat-title"]')
+        except:
+            element_name = None
+        file_host.write("Nome que será colocado nos arquivos do print: {}\n".format(name))
+        if element_name:
+            # print(element_name.text)
+            file_host.write("Nome encontrado na conversa aberta no navegador: {}\n".format(element_name.text))
         while True:
             # pega conversa
             element = driver.find_element(By.ID, 'main')
+            # monta caminho do arquivo da imagem - exemplo: administrativo-geral/ADMINISTRATIVO-GERAL/02 DPTO TI.GTI/10 - CONTROLE FERRAMENTAS/WHATSAPP/NOVEMBRO/01-11-2022/nome_numeroprint
             print_chat = os.path.join(path_chat, '{}_{}.png'.format(name, i))
             # salva print da conversa
             element.screenshot(print_chat)
             logger.info("Print salvo em {}".format(print_chat))
-            # rola para próxima página
+            # rola para próxima página da conversa
             driver.execute_script("return document.evaluate('//div[@data-testid=\"conversation-panel-messages\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scroll(0, {})".format(scroll_roll))
-            # compara posição atual com o tamanho total
+            # compara posição atual com o tamanho total para verificar se chegou no final
             if scroll_roll >= scroll_height:
                 break
             i += 1
             scroll_roll += 500
+        # atualiza tempo
+        now = datetime.datetime.now()
+        finish_backup = now.strftime("%m/%d/%Y, %H:%M:%S")
+        # registra hora que finalizou backup no arquivo
+        file_host.write('BACKUP finalizado {}\n'.format(finish_backup))
+        # fecha arquivo
+        file_host.close()
     except Exception as err:
         driver.quit()
         logger.error(err)
@@ -346,6 +450,7 @@ def scroll_to_top():
             last_height = driver.execute_script("return document.evaluate('//div[@data-testid=\"conversation-panel-messages\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scrollHeight")
 
             while True:
+                # executa rolagem na página
                 driver.execute_script("document.evaluate('//div[@data-testid=\"conversation-panel-messages\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scroll(0, 0);")
 
                 # espera pagina carregar
@@ -359,6 +464,7 @@ def scroll_to_top():
     except Exception as err:
         driver.quit()
         logger.error(err)
+
 
 def scroll_to_bottom_chat_list():
     """Rola até o final da lista de chat
@@ -388,22 +494,30 @@ def scroll_to_bottom_chat_list():
         driver.quit()
         logger.error(err)
 
+
 if __name__ == '__main__':
-    try:
-        # verifica sistema operacional
-        if os.name == 'nt':
-            print('Windows')
-            path_out = r'D:\Imagens\TESTE-WA'
-        else:
-            print('Linux')
-            path_out = os.environ['HOME']
-        print("NÃO\tFECHE\tESTA\tJANELA!!!!")
-        # locate_chat_today(path_out)
-        locate_all_chat(path_out)
-        # name = input('Digite o nome da conversa')
-        # locate_chat_ignore_case(name, r'D:\Imagens\TESTE-WA')
-        # locate_all_chat_by_name(path_out)
-        driver.quit()
-    except Exception as err:
-        driver.quit()
-        logger.error(err)
+    if check_internet():
+        try:
+            # verifica sistema operacional
+            if os.name == 'nt':
+                print('Windows')
+                # caminho de salvamento no windows
+                path_out = os.path.join(os.environ['USERPROFILE'], 'Imagens')
+            else:
+                print('Linux')
+                # caminho de salvamento no linux
+                path_out = os.path.join(os.environ['HOME'], 'Imagens')
+            print("!!!!!"*30+"NÃO\tFECHE\tESTA\tJANELA"+"!!!!!"*30)
+            print("#"*20+"ATENÇÃO"+"#"*20)
+            print("Máquina será desligada após finalizado o backup")
+            locate_chat_today(path_out)
+            # locate_all_chat(path_out)
+            # locate_all_chat_by_name(path_out)
+            # name = input("Digite o nome -> ")
+            # locate_chat_ignore_case(name, path_out)
+            driver.quit()
+        except Exception as err:
+            driver.quit()
+            logger.error(err)
+    else:
+        raise ConnectionError("Internet fora do ar")
