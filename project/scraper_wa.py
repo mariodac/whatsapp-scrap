@@ -2,7 +2,7 @@
 #Atualização: 26/12/2022.
 #Abre whatsapp web e salva print das conversas
 
-import re, time, os, socket, logging, datetime, requests
+import re, time, os, socket, logging, datetime, requests, calendar
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.core.utils import ChromeType 
@@ -23,6 +23,7 @@ def check_internet():
         return False
 # dicionario para criar a pasta do diretorio do mês
 MESES = {"01":"JANEIRO", "02":"FEVEREIRO", "03":"MARÇO", "04":"ABRIL", "05":"MAIO", "06":"JUNHO","07":"JULHO","08":"AGOSTO","09":"SETEMBRO","10":"OUTUBRO","11":"NOVEMBRO","12":"DEZEMBRO"}
+DIA_DA_SEMANA = {'domingo': 'Sunday', 'segunda-feira': 'Monday', 'terça-feira': 'Tuesday', 'quarta-feira': 'Wednesday', 'quinta-feira': 'Thursday', 'sexta-feira': 'Friday', 'sábado': 'Saturday'}
 # configuração logger
 # hostname da máquina que executa o script
 hostname = socket.gethostname()
@@ -182,6 +183,73 @@ def locate_chat_ignore_case(name:str, path_out):
         logger.error(err)
 
 def locate_chat_today(path_out):
+    """Localiza todos os chats do dia atual e realiza prints
+
+    Args:
+        path_out (str): caminho de saida para os prints
+    """
+    try:
+        if chat_header:
+            # lista de chats encontrados
+            chats = []
+            SCROLL_PAUSE_TIME = 1
+            # Pega tamanho do scroll
+            scroll_height = driver.execute_script("return document.evaluate('//div[@id=\"pane-side\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scrollHeight")
+            # # Rola ate o fim da pagina
+            # driver.execute_script("document.evaluate('//div[@id=\"pane-side\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scroll(0, {});".format(scroll_height))
+            # # Rola até o inicio da pagina
+            driver.execute_script("document.evaluate('//div[@id=\"pane-side\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scroll(0, 0);")
+            # Define o tamanho de rolagem
+            scroll_roll = 1000
+            while True:
+                # todos os chats visiveis na página
+                elements = driver.find_elements(By.XPATH, '//div[@role="gridcell"]')
+                for element in elements:
+                    # verifica hora da ultima mensagem apenas do dia atual
+                    if re.search('(2[0-3]|[01]?[0-9]):([0-5]?[0-9])', element.text):
+                        # clica na conversa
+                        element.click()
+                        # abre menu de contexto da conversa
+                        ActionChains(driver).context_click(element).perform()
+                        time.sleep(5)
+                        try:
+                            element_context = driver.find_element(By.XPATH, '//div[@role="application"]')
+                        except:
+                            element_context = None
+                        # marca conversa como não lida
+                        if element_context:
+                            # verifica se whatsapp é business
+                            if 'Editar etiqueta' in element_context.text:
+                                ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
+                            else:
+                                ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
+                        # obtem nome da conversa
+                        name = element.text.split("\n")[0]
+                        name = normalizeName(name)
+                        # verifica nome na lista de chats encontrados
+                        if name not in chats:
+                            # sobe no topo da conversa
+                            scroll_to_top()
+                            # salva os prints das conversas
+                            save_print(path_out, name)
+                            # adiciona nome na lista
+                            chats.append(name)
+                        else:
+                            continue
+                # verifica se chegou no fim da lista de chat
+                if scroll_roll >= scroll_height:
+                    break
+                # Rola no tamanho definido
+                driver.execute_script("document.evaluate('//div[@id=\"pane-side\"]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.scroll(0, {});".format(scroll_roll))
+                # Define novo tamanho de rolagem
+                scroll_roll += 1000
+                # Espera página carregar
+                time.sleep(SCROLL_PAUSE_TIME)
+    except Exception as err:
+        driver.quit()
+        logger.error(err)
+
+def locate_chat_week(path_out):
     """Localiza todos os chats do dia atual e realiza prints
 
     Args:
@@ -500,7 +568,7 @@ if __name__ == '__main__':
             if os.name == 'nt':
                 print('Windows')
                 # caminho de salvamento no windows
-                path_out = os.path.join(os.environ['USERPROFILE'], 'Imagens')
+                path_out = os.path.join(os.environ['USERPROFILE'], 'Pictures')
             else:
                 print('Linux')
                 # caminho de salvamento no linux
@@ -508,7 +576,7 @@ if __name__ == '__main__':
             print("!!!!!"*30+"NÃO\tFECHE\tESTA\tJANELA"+"!!!!!"*30)
             print("#"*20+"ATENÇÃO"+"#"*20)
             print("Máquina será desligada após finalizado o backup")
-            locate_chat_today(path_out)
+            locate_chat_week(path_out)
             # locate_all_chat(path_out)
             # locate_all_chat_by_name(path_out)
             # name = input("Digite o nome -> ")
