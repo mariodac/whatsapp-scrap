@@ -465,7 +465,6 @@ def scroll_to_top():
         driver.quit()
         logger.error(err)
 
-
 def scroll_to_bottom_chat_list():
     """Rola até o final da lista de chat
     """
@@ -493,7 +492,6 @@ def scroll_to_bottom_chat_list():
     except Exception as err:
         driver.quit()
         logger.error(err)
-
 
 if __name__ == '__main__':
     if check_internet():
