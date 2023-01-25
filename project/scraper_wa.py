@@ -254,7 +254,7 @@ def locate_chat_today(path_out):
         logger.error(err)
 
 def locate_chat_week(path_out):
-    """Localiza todos os chats do dia atual e realiza prints
+    """Localiza todos os chats de sete dias antes e realiza prints
 
     Args:
         path_out (str): caminho de saida para os prints
@@ -276,37 +276,35 @@ def locate_chat_week(path_out):
                 # todos os chats visiveis na página
                 elements = driver.find_elements(By.XPATH, '//div[@role="gridcell"]')
                 for element in elements:
-                    # verifica hora da ultima mensagem apenas do dia atual
-                    if re.search('(2[0-3]|[01]?[0-9]):([0-5]?[0-9])', element.text):
-                        # clica na conversa
-                        element.click()
-                        # abre menu de contexto da conversa
-                        ActionChains(driver).context_click(element).perform()
-                        time.sleep(5)
-                        try:
-                            element_context = driver.find_element(By.XPATH, '//div[@role="application"]')
-                        except:
-                            element_context = None
-                        # marca conversa como não lida
-                        if element_context:
-                            # verifica se whatsapp é business
-                            if 'Editar etiqueta' in element_context.text:
-                                ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
-                            else:
-                                ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
-                        # obtem nome da conversa
-                        name = element.text.split("\n")[0]
-                        name = normalizeName(name)
-                        # verifica nome na lista de chats encontrados
-                        if name not in chats:
-                            # sobe no topo da conversa
-                            scroll_to_top()
-                            # salva os prints das conversas
-                            save_print(path_out, name)
-                            # adiciona nome na lista
-                            chats.append(name)
+                    # clica na conversa
+                    element.click()
+                    # abre menu de contexto da conversa
+                    ActionChains(driver).context_click(element).perform()
+                    time.sleep(5)
+                    try:
+                        element_context = driver.find_element(By.XPATH, '//div[@role="application"]')
+                    except:
+                        element_context = None
+                    # marca conversa como não lida
+                    if element_context:
+                        # verifica se whatsapp é business
+                        if 'Editar etiqueta' in element_context.text:
+                            ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
                         else:
-                            continue
+                            ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
+                    # obtem nome da conversa
+                    name = element.text.split("\n")[0]
+                    name = normalizeName(name)
+                    # verifica nome na lista de chats encontrados
+                    if name not in chats:
+                        # sobe no topo da conversa
+                        scroll_to_top()
+                        # salva os prints das conversas
+                        save_print(path_out, name)
+                        # adiciona nome na lista
+                        chats.append(name)
+                    else:
+                        continue
                 # verifica se chegou no fim da lista de chat
                 if scroll_roll >= scroll_height:
                     break
@@ -449,10 +447,17 @@ def save_print(path_out, name:str):
         name = normalizeName(name)
         # obtem data atual
         now = datetime.datetime.now()
+        # obtem ano
+        year = now.year
         init_backup = now.strftime("%m/%d/%Y, %H:%M:%S")
         now = now.strftime("%d-%m-%Y")
+        # monta o caminho da pasta do mês - exemplo: administrativo-geral/ADMINISTRATIVO-GERAL/02 DPTO TI.GTI/10 - CONTROLE FERRAMENTAS/WHATSAPP/2023
+        path_year = os.path.join(path_out, str(year))
+        # verifica se pasta do ano não existe e cria a pasta
+        if not os.path.isdir(path_year):
+            os.mkdir(path_year)
         # monta o caminho da pasta do mês - exemplo: administrativo-geral/ADMINISTRATIVO-GERAL/02 DPTO TI.GTI/10 - CONTROLE FERRAMENTAS/WHATSAPP/NOVEMBRO
-        path_month = os.path.join(path_out, MESES[now.split('-')[1]])
+        path_month = os.path.join(path_year, MESES[now.split('-')[1]])
         # verifica se pasta do mes não existe e cria a pasta
         if not os.path.isdir(path_month):
             os.mkdir(path_month)
