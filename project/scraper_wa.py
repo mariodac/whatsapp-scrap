@@ -226,6 +226,10 @@ def locate_chat_today(path_out):
                         # obtem nome da conversa
                         name = element.text.split("\n")[0]
                         name = normalizeName(name)
+                        # data da conversa
+                        date = element.text.split("\n")[1]
+                        date_datetime = datetime.datetime.strptime(date,'%d/%m/%Y').date()
+                        weekday = calendar.day_name[date_datetime.weekday()]
                         # verifica nome na lista de chats encontrados
                         if name not in chats:
                             # sobe no topo da conversa
