@@ -132,3 +132,4 @@ dmypy.json
 .pyre/
 project/relatorio-conversas.xlsx
 project/~$*
+*.xlsx
