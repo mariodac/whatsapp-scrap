@@ -131,3 +131,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 project/relatorio_terminais.py
+project/relatorio_terminais_2.py
+project/relatorio-conversas.xlsx
+project/~$*
