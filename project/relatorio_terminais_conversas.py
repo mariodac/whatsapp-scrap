@@ -47,7 +47,7 @@ for year_month,y in dic_year_month.items():
 path_out = 'PATH\TO\RELATORIO'
 now = datetime.datetime.now().date()
 year = now.year
-month = now.month
+month = now.strftime("%B")
 date = now.strftime('%d-%m-%Y')
 path_year = os.path.join(path_out, str(year))
 if not os.path.isdir(path_year):
