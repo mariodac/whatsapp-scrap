@@ -30,6 +30,7 @@ def print_itens(itens:list):
         print('{} : {}'.format(index,item))
 
 path_backup = r'PATH\TO\BACKUP\WHATSAPP'
+path_out = r'PATH\TO\RELATORIO\BACKUP\WHATSAPP'
 # escolha do ano
 # lista itens da pasta de backups
 itens = os.listdir(path_backup)
@@ -62,6 +63,7 @@ op = read_while_type_is_different(int, "Digite a opção > ")
 date = itens[op]
 path_day = os.path.join(path_month, itens[op])
 itens = os.listdir(path_day)
+conversas = {date:itens}
 conversas_path = [os.path.join(path_day, x) for x in itens]
 terminais = []
 for item in conversas_path:
@@ -69,6 +71,18 @@ for item in conversas_path:
 terminais = [x for x in terminais if x]
 terminais = list(set(terminais))
 dic = {date: terminais}
+# path_out = r'/PATH/TO/RELATORIO'
+path_year = os.path.join(path_out, str(year))
+if not os.path.isdir(path_year):
+    os.mkdir(path_year)
+path_month = os.path.join(path_year, month)
+if not os.path.isdir(path_month):
+    os.mkdir(path_month)
+path_date = os.path.join(path_month, date)
+if not os.path.isdir(path_date):
+    os.mkdir(path_date)
 df = pd.DataFrame.from_dict(dic)
-df.to_excel(os.path.join(os.environ['USERPROFILE'], 'Desktop', '{}.xlsx'.format(date)))
+df.to_excel(os.path.join(path_date, 'relatorio-terminais_{}.xlsx'.format(date)))
+df = pd.DataFrame.from_dict(conversas)
+df.to_excel(os.path.join(path_date, 'relatorio-conversas_{}.xlsx'.format(date)))
 
