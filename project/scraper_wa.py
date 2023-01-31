@@ -362,22 +362,31 @@ def locate_chat_ndays(path_out, ndays=3):
                         name = element.text.split("\n")[0]
                         name = normalizeName(name)
                         now = datetime.datetime.now().date()
-                        # obtem o ultimo dia 
                         last_week = now - datetime.timedelta(ndays)
                         today = now.day
-                        # today_date = now.strftime("%d-%m-%Y")
+                        # today_date = now.strftime("%d-%m-%Y") - "27-01-2023"
                         # today = 27
                         # last_week = 20
-                        # '{}/{}'.format(x, now.strftime("%m/%Y"))
+                        # '{}/{}'.format(x, now.strftime("%m/%Y")) - "20-01-2023"
                         # now.strftime("%m/%Y") = "01/2023"
-                        # datetime.datetime.strptime('{}/{}'.format(20, now.strftime("%m/%Y")), '%d/%m/%Y').date() objeto do datetime.date
+                        # datetime.datetime.strptime('{}/{}'.format(x, now.strftime("%m/%Y")), '%d/%m/%Y').date() objeto do datetime.date
                         # weekday() retorna uma numero da semana {segunda=0,terça=1,quarta=2,quinta=3,sexta=4,sábado=5,domingo=6}
                         # datetime.datetime.strptime('{}/{}'.format(20, now.strftime("%m/%Y")), '%d/%m/%Y').date().weekday() = 4
                         # range(last_week.day,today+1) [20,21,22,23,24,25,26,27]
                         last_days = {'{}/{}'.format(x, now.strftime("%m/%Y")): DIA_DA_SEMANA[calendar.day_name[datetime.datetime.strptime('{}/{}'.format(x, now.strftime("%m/%Y")), '%d/%m/%Y').date().weekday()]] for x in range(last_week.day,today+1)}
-                        date = element.text.split('\n')[1]
+                        if len(element.text.split('\n')) > 1:
+                            date = element.text.split('\n')[1]
+                            weekday = date in last_days.values()
+                            date_week = date in last_days.keys()
+                            yesterday = date == 'Ontem'
+                            hour = re.search('(2[0-3]|[01]?[0-9]):([0-5]?[0-9])', date)
+                        else:
+                            weekday = element.text in last_days.values()
+                            date_week = element.text in last_days.keys()
+                            yesterday = element.text == 'Ontem'
+                            hour = re.search('(2[0-3]|[01]?[0-9]):([0-5]?[0-9])', element.text)
                         # re.search('(2[0-3]|[01]?[0-9]):([0-5]?[0-9])', date)
-                        if re.search('(2[0-3]|[01]?[0-9]):([0-5]?[0-9])', date) or date == 'Ontem' or date in last_days.keys() or date in last_days.values():
+                        if hour or yesterday or date_week or weekday:
                             # clica na conversa
                             try:
                                 element.click()
@@ -394,7 +403,7 @@ def locate_chat_ndays(path_out, ndays=3):
                             if element_context:
                                 # não marca como não lida mensagens arquivadas
                                 if 'Desarquivar conversa' in element_context.text:
-                                    pass
+                                    logger.info("Conversa arquivada {}".format(name))
                                 # verifica se whatsapp é business
                                 elif 'Editar etiqueta' in element_context.text:
                                     ActionChains(driver).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ENTER).perform()
@@ -423,6 +432,7 @@ def locate_chat_ndays(path_out, ndays=3):
         driver.quit()
         nline = sys.exc_info()[2]
         logger.error('Na linha {} -{}'.format(nline.tb_lineno,err))
+
 
 def locate_all_chat(path_out):
     """Localiza todos os chats e realiza prints
@@ -697,8 +707,10 @@ if __name__ == '__main__':
             print("#"*20+"ATENÇÃO"+"#"*20)
             print("Máquina será desligada após finalizado o backup")
             locate_chat_ndays(path_out)
-            if locate_archived_chats(path_out):
+            if locate_archived_chats():
+                logger.info("Iniciando conversas arquivadas {}".format(timestamp()))
                 locate_chat_ndays(path_out)
+                logger.info("Finalizando conversas arquivadas {}".format(timestamp()))
             # locate_all_chat(path_out)
             # locate_all_chat_by_name(path_out)
             # name = input("Digite o nome -> ")
