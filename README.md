@@ -1,15 +1,23 @@
 # whatsapp-scrap
-Scrapping whatsapp web
+Scrapping (coleta de dados) whatsapp web
+
 Realiza a abertura de whatsapp web e realiza prints de conversas
+
+## Tecnologias utilizadas
+
+<div style="display: inline_block"><br>
+  <img align="center" alt="Python" height="30" width="40" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg">
+  <img align="center" alt="Selenium" height="30" width="40" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/selenium/selenium-original.svg">
+</div>
+
 ## Modo de usar:
 
 Há 3 modos que é realizado o print:
-<a id="ancora2"></a>
-- Pesquisa por nome: **FUNÇÃO** (*locate_chat_ignore_case*, *locate_all_chat_by_name*)
-- Chats do dia: **FUNÇÃO** (*locate_chat_today*)
-- Todos os chats: **FUNÇÃO** (*locate_all_chat_by_name*)
+- Pesquisa por nome: (*locate_chat_ignore_case*, *locate_all_chat_by_name*)
+- Chats do dia: (*locate_chat_today*)
+- Todos os chats: (*locate_all_chat_by_name*)
 
-Dentro do arquivo [test.py](project/test.py), chame a [**FUNÇÃO**](#ancora2) desejada e execute o arquivo.
+Dentro do arquivo [test.py](project/test.py), chame a [**FUNÇÃO**] desejada e execute o arquivo.
 
 **Compatível com Windows, Linux**
 
