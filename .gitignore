@@ -130,6 +130,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-project/relatorio-conversas.xlsx
+project/*.xlsx
 project/~$*
 *.xlsx
+project/prints
