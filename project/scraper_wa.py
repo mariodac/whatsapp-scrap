@@ -132,7 +132,6 @@ wait = WebDriverWait(driver, 600)
 time.sleep(30)
 chat_header = wait.until(EC.visibility_of_element_located((By.XPATH, "//header[@data-testid='chatlist-header']")))
 
-
 def normalizeName(name):
     """Remove caracteres especiais do nome informado
 
@@ -432,7 +431,6 @@ def locate_chat_ndays(path_out, ndays=3):
         driver.quit()
         nline = sys.exc_info()[2]
         logger.error('Na linha {} -{}'.format(nline.tb_lineno,err))
-
 
 def locate_all_chat(path_out):
     """Localiza todos os chats e realiza prints
