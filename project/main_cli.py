@@ -6,13 +6,13 @@ from scraper_wa import ScraperWhatsapp
 import wx, os, datetime
 
 class MainCli:
-    def escolher_diretorio(self,nome:str="saida"):
-        
+    def escolher_diretorio(self,nome:str="saida"):    
         # cria instancia da tela que não tera um pai (janela principal)
         app = wx.App(None)
         # cria um objeto de dialog de diretório sem um pai
         dialog = wx.DirDialog (None, "Escolha um diretório", "", wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
-        if dialog.ShowModal() == wx.ID_OK: #verifica se o usuário clicou em ok
+        #verifica se o usuário clicou em ok
+        if dialog.ShowModal() == wx.ID_OK: 
             # diretorio selecionado para criar diretório onde salvar imagens
             path_escolhido = dialog.GetPath()
         else: # caso não clique em OK
